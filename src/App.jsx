@@ -1,56 +1,78 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import mapboxgl from "mapbox-gl";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import "./App.css";
 
-mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_TOKEN;
+// Dummy koordinater for visualisering (du kan knytte ID til reelle koordinater senere)
+const koordinater = {
+  "Solenergi AS": [59.9139, 10.7522],       // Oslo
+  "Borettslag Vest": [60.39299, 5.32415],   // Bergen
+  "Takpartner Øst": [59.1312, 11.3871],     // Halden
+};
 
-function App() {
-  const [agreements, setAgreements] = useState([]);
+const App = () => {
+  const [avtaler, setAvtaler] = useState([]);
 
   useEffect(() => {
-    axios.get(process.env.REACT_APP_API_URL + "/agreements")
-      .then(res => setAgreements(res.data));
+    fetch("https://solarservice-backend-production.up.railway.app/agreements")
+      .then((res) => res.json())
+      .then((data) => setAvtaler(data))
+      .catch((err) => console.error("Feil ved henting av data:", err));
   }, []);
 
-  useEffect(() => {
-    const map = new mapboxgl.Map({
-      container: "map",
-      style: "mapbox://styles/mapbox/light-v10",
-      center: [11, 64.5],
-      zoom: 4
-    });
-
-    agreements.forEach(a => {
-      new mapboxgl.Marker()
-        .setLngLat([a.lon, a.lat])
-        .setPopup(new mapboxgl.Popup().setHTML(`<b>${a.name}</b><br>${a.status}<br>${a.next_service}`))
-        .addTo(map);
-    });
-
-    return () => map.remove();
-  }, [agreements]);
-
   return (
-    <div>
-      <div id="map" style={{ height: "400px", width: "100%" }}></div>
-      <table>
-        <thead>
-          <tr>
-            <th>Navn</th><th>Status</th><th>Neste service</th>
-          </tr>
-        </thead>
-        <tbody>
-          {agreements.map(a => (
-            <tr key={a.id}>
-              <td>{a.name}</td>
-              <td>{a.status}</td>
-              <td>{a.next_service}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="container">
+      <h1>Serviceavtaler – SolarService</h1>
+
+      <div className="innhold">
+        <div className="kart">
+          <MapContainer center={[62.5, 10.5]} zoom={5} style={{ height: "400px", width: "100%" }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {avtaler.map((avtale) => {
+              const pos = koordinater[avtale.Bedrift] || [61, 10];
+              return (
+                <Marker key={avtale.ID} position={pos} icon={L.icon({ iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png", iconSize: [25, 41], iconAnchor: [12, 41] })}>
+                  <Popup>
+                    <strong>{avtale.Tittel}</strong><br />
+                    {avtale.Bedrift}<br />
+                    Neste service: {avtale["Neste service"]}
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MapContainer>
+        </div>
+
+        <div className="liste">
+          <h2>Liste over avtaler</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Tittel</th>
+                <th>Bedrift</th>
+                <th>Neste service</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {avtaler.map((avtale) => (
+                <tr key={avtale.ID}>
+                  <td>{avtale.Tittel}</td>
+                  <td>{avtale.Bedrift}</td>
+                  <td>{avtale["Neste service"]}</td>
+                  <td>{avtale.Status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default App;
