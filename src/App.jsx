@@ -1,58 +1,44 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-// Marker-ikon fiks (Leaflet trenger eksplisitt URL for default ikon)
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
-
-export default function App() {
+const App = () => {
   const [agreements, setAgreements] = useState([]);
 
   useEffect(() => {
-    fetch("https://solarservice-backend-production.up.railway.app/agreements")
+    fetch('https://solarservice-backend-production.up.railway.app/agreements')
       .then((res) => res.json())
       .then((data) => setAgreements(data))
-      .catch((err) => console.error("Klarte ikke hente data:", err));
+      .catch((err) => console.error('API-feil:', err));
   }, []);
 
-  // Dummy plasseringer – du kan senere bruke koordinater fra Supabase
-  const dummyCoordinates = [
-    [59.91, 10.75], // Oslo
-    [60.39, 5.32],  // Bergen
-    [58.97, 5.73],  // Stavanger
+  // Midlertidig dummy-koordinater (du kan senere koble disse til reelle adresser via geokoding)
+  const dummyCoords = [
+    [59.9139, 10.7522], // Oslo
+    [60.3913, 5.3221],  // Bergen
+    [63.4305, 10.3951]  // Trondheim
   ];
 
   return (
-    <div>
-      <h1 style={{ textAlign: "center" }}>SolarService Avtaler</h1>
-      <MapContainer center={[61, 8]} zoom={5} style={{ height: "80vh", width: "100%" }}>
+    <div style={{ height: '100vh', width: '100%' }}>
+      <MapContainer center={[61, 10]} zoom={5} style={{ height: '100%', width: '100%' }}>
         <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
-        {agreements.map((item, index) => (
-          <Marker key={item.ID} position={dummyCoordinates[index % dummyCoordinates.length]}>
+        {agreements.map((a, idx) => (
+          <Marker key={a.ID} position={dummyCoords[idx % dummyCoords.length]}>
             <Popup>
-              <strong>{item.Tittel}</strong>
-              <br />
-              Firma: {item.Bedrift}
-              <br />
-              Neste service: {item["Neste service"]}
-              <br />
-              Status: {item.Status}
+              <strong>{a.Tittel}</strong><br />
+              {a.Bedrift}<br />
+              Neste: {a["Neste service"]}
             </Popup>
           </Marker>
         ))}
       </MapContainer>
     </div>
   );
-}
+};
+
+export default App;
